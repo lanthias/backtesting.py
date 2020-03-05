@@ -1,6 +1,6 @@
 """
-Core backtesting data structures.
-Objects from this module can be imported from the top-level
+Core framework data structures.
+Objects from this module can also be imported from the top-level
 module directly, e.g.
 
     from backtesting import Backtest, Strategy
@@ -909,7 +909,7 @@ class Backtest:
         To run the backtest using e.g. 50:1 leverge that your broker allows,
         set margin to `0.02` (1 / leverage).
 
-        If `trade_on_close` is `True`, market orders will be executed
+        If `trade_on_close` is `True`, market orders will be filled
         with respect to the current bar's closing price instead of the
         next bar's open.
         """
@@ -1097,7 +1097,7 @@ class Backtest:
             raise ValueError('No admissible parameter combinations to test')
 
         if len(param_combos) > 300:
-            warnings.warn('Searching best of {} configurations.'.format(len(param_combos)),
+            warnings.warn('Searching for best of {} configurations.'.format(len(param_combos)),
                           stacklevel=2)
 
         heatmap = pd.Series(np.nan,
@@ -1287,7 +1287,7 @@ class Backtest:
         a separate drawdown graph section.
 
         If `smooth_equity` is `True`, the equity graph will be
-        interpolated between points of cash-only positions,
+        interpolated between fixed points at trade closing times,
         unaffected by any interim asset volatility.
 
         If `relative_equity` is `True`, scale and label equity graph axis
