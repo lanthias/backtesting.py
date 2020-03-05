@@ -209,7 +209,7 @@ def resample_apply(rule: str,
         assert isinstance(series, _Array), \
             'resample_apply() takes either a `pd.Series`, `pd.DataFrame`, ' \
             'or a `Strategy.data.*` array'
-        series = series.to_series()
+        series = series.s
 
     series = series.copy()  # XXX: pandas 1.0.1 bug https://github.com/pandas-dev/pandas/issues/31710  # noqa: E501
     resampled = series.resample(rule, label='right').agg(agg).dropna()

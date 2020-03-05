@@ -1,3 +1,4 @@
+import warnings
 from typing import Sequence
 from numbers import Number
 
@@ -68,6 +69,11 @@ class _Array(np.ndarray):
             return super().__float__()
 
     def to_series(self):
+        warnings.warn("`.to_series()` is deprecated. For pd.Series conversion, use accessor `.s`")
+        return self.s
+
+    @property
+    def s(self) -> pd.Series:
         return pd.Series(self, index=self._opts['data'].index, name=self.name)
 
 
@@ -82,15 +88,13 @@ class _Data:
     and the returned "series" are _not_ `pd.Series` but `np.ndarray`
     for performance reasons.
     """
-    def __init__(self, df):
+    def __init__(self, df: pd.DataFrame):
+        self.__df = df
         self.__i = len(df)
         self.__pip = None
         self.__cache = {}
-
-        self.__arrays = {col: _Array(arr, data=self)
-                         for col, arr in df.items()}
-        # Leave index as Series because pd.Timestamp nicer API to work with
-        self.__arrays['__index'] = df.index.copy()
+        self.__arrays = None
+        self._update_arrays()
 
     def __getitem__(self, item):
         return getattr(self, item)
@@ -105,8 +109,20 @@ class _Data:
         self.__i = i
         self.__cache.clear()
 
+    def _update_arrays(self):
+        self.__arrays = {col: _Array(arr, data=self)
+                         for col, arr in self.__df.items()}
+        # Leave index as Series because pd.Timestamp nicer API to work with
+        self.__arrays['__index'] = self.__df.index.copy()
+
     def __len__(self):
         return self.__i
+
+    @property
+    def df(self) -> pd.DataFrame:
+        return (self.__df.iloc[:self.__i]
+                if self.__i < len(self.__df)
+                else self.__df)
 
     @property
     def pip(self):
@@ -115,7 +131,7 @@ class _Data:
                                          for s in self.__arrays['Close'].astype(str)])
         return self.__pip
 
-    def __get_array(self, key):
+    def __get_array(self, key) -> _Array:
         arr = self.__cache.get(key)
         if arr is None:
             arr = self.__cache[key] = self.__arrays[key][:self.__i]
@@ -142,8 +158,8 @@ class _Data:
         return self.__get_array('Volume')
 
     @property
-    def index(self):
-        return self.__get_array('__index')
+    def index(self) -> pd.Index:
+        return self.__get_array('__index')  # type: ignore
 
     # Make pickling in Backtest.optimize() work with our catch-all __getattr__
     def __getstate__(self):

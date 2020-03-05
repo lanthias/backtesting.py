@@ -555,7 +555,7 @@ class TestLib(TestCase):
     def test_SignalStrategy(self):
         class S(SignalStrategy):
             def init(self):
-                sma = self.data.Close.to_series().rolling(10).mean()
+                sma = self.data.Close.s.rolling(10).mean()
                 self.set_signal(self.data.Close > sma,
                                 self.data.Close < sma)
 
@@ -568,7 +568,7 @@ class TestLib(TestCase):
                 super().init()
                 self.set_atr_periods(40)
                 self.set_trailing_sl(3)
-                self.sma = self.I(lambda: self.data.Close.to_series().rolling(10).mean())
+                self.sma = self.I(lambda: self.data.Close.s.rolling(10).mean())
 
             def next(self):
                 super().next()
@@ -595,6 +595,22 @@ class TestUtil(TestCase):
         self.assertEqual(_as_str(lambda x: x), '')
         for s in ('Open', 'High', 'Low', 'Close'):
             self.assertEqual(_as_str(_Array([1], name=s)), s[0])
+
+    def test_pandas_accessors(self):
+        class S(Strategy):
+            def init(self):
+                close, index = self.data.Close, self.data.index
+                assert close.s.equals(pd.Series(close, index=index))
+                assert self.data.df['Close'].equals(pd.Series(close, index=index))
+                self.data.df['new_key'] = 2 * close
+
+            def next(self):
+                close, index = self.data.Close, self.data.index
+                assert close.s.equals(pd.Series(close, index=index))
+                assert self.data.df['Close'].equals(pd.Series(close, index=index))
+                assert self.data.df['new_key'].equals(pd.Series(self.data.new_key, index=index))
+
+        Backtest(GOOG.iloc[:20], S).run()
 
 
 @unittest.skipUnless(

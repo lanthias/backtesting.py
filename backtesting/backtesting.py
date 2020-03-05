@@ -969,11 +969,12 @@ class Backtest:
 
         Keyword arguments are interpreted as strategy parameters.
         """
-        data = _Data(self._data)
+        data = _Data(self._data.copy(deep=False))
         broker = self._broker(data=data)  # type: _Broker
         strategy = self._strategy(broker, data, kwargs)  # type: Strategy
 
         strategy.init()
+        data._update_arrays()  # Strategy.init might have changed/added to data.df
 
         # Indicators used in Strategy.next()
         indicator_attrs = {attr: indicator
