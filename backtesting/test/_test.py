@@ -8,6 +8,7 @@ from glob import glob
 from runpy import run_path
 from tempfile import NamedTemporaryFile, gettempdir
 from unittest import TestCase
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -497,6 +498,17 @@ class TestPlot(TestCase):
 
         with _tempfile() as f:
             bt.plot(filename=f, plot_drawdown=True, smooth_equity=False)
+            # Give browser time to open before tempfile is removed
+            time.sleep(1)
+
+    def test_resample(self):
+        bt = Backtest(GOOG, SmaCross)
+        bt.run()
+        import backtesting._plotting
+        with _tempfile() as f,\
+                patch.object(backtesting._plotting, '_MAX_CANDLES', 10),\
+                self.assertWarns(UserWarning):
+            bt.plot(filename=f, resample=True)
             # Give browser time to open before tempfile is removed
             time.sleep(1)
 
